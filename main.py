@@ -16,7 +16,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Налаштування
-TOKEN = os.getenv("BOT_TOKEN", "7644901235:AAHOf3wmULThC2iVkBy2fMyUgsehPTlSCgg")
+TOKEN = os.getenv("BOT_TOKEN")
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 app = Flask(__name__)
