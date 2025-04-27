@@ -31,6 +31,9 @@ ADMIN_ID = 123456  # Заміни на свій Telegram ID
 # Визначення, чи запуск локальний
 IS_LOCAL = os.getenv("IS_LOCAL", "true").lower() == "true"
 
+# Створюємо окремий цикл подій для обробки асинхронних викликів у Flask
+loop = asyncio.new_event_loop()
+asyncio.set_event_loop(loop)
 
 @dp.message(CommandStart())
 async def handle_start(message: types.Message):
@@ -410,7 +413,6 @@ async def finish_quiz(chat_id):
 def webhook():
     logging.info("Received webhook request")
     try:
-        loop = asyncio.get_event_loop()
         update = types.Update(**request.get_json())
         loop.run_until_complete(dp.feed_update(bot, update))
         logging.info("Webhook processed successfully")
@@ -427,7 +429,6 @@ def set_webhook_endpoint():
         if not webhook_url:
             logging.error("WEBHOOK_URL is not set in environment variables")
             return "WEBHOOK_URL is not set in environment variables", 500
-        loop = asyncio.get_event_loop()
         loop.run_until_complete(bot.set_webhook(webhook_url))
         logging.info(f"Webhook set to {webhook_url}")
         return {"ok": True, "result": True, "description": "Webhook was set"}, 200
