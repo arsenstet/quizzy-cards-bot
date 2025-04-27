@@ -1,6 +1,6 @@
-import asyncio
 import logging
 import os
+import asyncio
 from aiogram import Bot, Dispatcher, types
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.filters import Command, CommandStart
@@ -407,19 +407,28 @@ async def finish_quiz(chat_id):
 
 
 @app.route('/webhook', methods=['POST'])
-async def webhook():
-    update = types.Update(**request.get_json())
-    await dp.feed_update(bot, update)
-    return '', 200
+def webhook():
+    logging.info("Received webhook request")
+    try:
+        loop = asyncio.get_event_loop()
+        update = types.Update(**request.get_json())
+        loop.run_until_complete(dp.feed_update(bot, update))
+        logging.info("Webhook processed successfully")
+        return '', 200
+    except Exception as e:
+        logging.error(f"Error processing webhook: {e}")
+        return '', 500
 
 
 @app.route('/webhook/setwebhook', methods=['GET'])
-async def set_webhook_endpoint():
+def set_webhook_endpoint():
     try:
         webhook_url = os.getenv("WEBHOOK_URL")
         if not webhook_url:
+            logging.error("WEBHOOK_URL is not set in environment variables")
             return "WEBHOOK_URL is not set in environment variables", 500
-        await bot.set_webhook(webhook_url)
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(bot.set_webhook(webhook_url))
         logging.info(f"Webhook set to {webhook_url}")
         return {"ok": True, "result": True, "description": "Webhook was set"}, 200
     except Exception as e:
@@ -436,21 +445,18 @@ async def set_webhook():
 
 
 async def main():
-    # Ініціалізація бази даних
+    logging.info("Starting database initialization...")
     init_db()
+    logging.info("Database initialization completed.")
 
     if IS_LOCAL:
-        # Локальний запуск із polling
         logging.info("Running in local mode with polling...")
-        # Видаляємо webhook перед запуском polling
         await bot.delete_webhook(drop_pending_updates=True)
         logging.info("Webhook deleted, starting polling...")
         await dp.start_polling(bot)
     else:
-        # Запуск на хостингу з webhook
         logging.info("Running in production mode with webhook...")
         await set_webhook()
-        # Запуск Flask через gunicorn (Procfile), тому app.run() не потрібен
 
 
 if __name__ == "__main__":
