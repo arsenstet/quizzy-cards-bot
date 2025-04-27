@@ -17,6 +17,8 @@ load_dotenv()
 
 # Налаштування
 TOKEN = os.getenv("BOT_TOKEN")
+if not TOKEN:
+    raise ValueError("BOT_TOKEN is not set in environment variables")
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 app = Flask(__name__)
@@ -350,7 +352,7 @@ async def check_answer(chat_id, user_answer):
         state["score"] += 1
         state["current_word_index"] += 1
         state["attempts"] = 3
-        save_quiz_result(chat_id, word, True)  # Змінили 1 на True
+        save_quiz_result(chat_id, word, True)
         await bot.send_message(
             chat_id,
             f"📍 *Квіз*\n"
@@ -375,7 +377,7 @@ async def check_answer(chat_id, user_answer):
         else:
             state["current_word_index"] += 1
             state["attempts"] = 3
-            save_quiz_result(chat_id, word, False)  # Змінили 0 на False
+            save_quiz_result(chat_id, word, False)
             await bot.send_message(
                 chat_id,
                 f"📍 *Квіз*\n"
@@ -411,6 +413,20 @@ async def webhook():
     return '', 200
 
 
+@app.route('/webhook/setwebhook', methods=['GET'])
+async def set_webhook_endpoint():
+    try:
+        webhook_url = os.getenv("WEBHOOK_URL")
+        if not webhook_url:
+            return "WEBHOOK_URL is not set in environment variables", 500
+        await bot.set_webhook(webhook_url)
+        logging.info(f"Webhook set to {webhook_url}")
+        return {"ok": True, "result": True, "description": "Webhook was set"}, 200
+    except Exception as e:
+        logging.error(f"Failed to set webhook: {e}")
+        return {"ok": False, "description": f"Failed to set webhook: {str(e)}"}, 500
+
+
 async def set_webhook():
     webhook_url = os.getenv("WEBHOOK_URL")
     if not webhook_url:
@@ -426,12 +442,15 @@ async def main():
     if IS_LOCAL:
         # Локальний запуск із polling
         logging.info("Running in local mode with polling...")
+        # Видаляємо webhook перед запуском polling
+        await bot.delete_webhook(drop_pending_updates=True)
+        logging.info("Webhook deleted, starting polling...")
         await dp.start_polling(bot)
     else:
         # Запуск на хостингу з webhook
         logging.info("Running in production mode with webhook...")
         await set_webhook()
-        app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+        # Запуск Flask через gunicorn (Procfile), тому app.run() не потрібен
 
 
 if __name__ == "__main__":

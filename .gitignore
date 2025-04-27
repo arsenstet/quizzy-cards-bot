@@ -1,12 +1,9 @@
-# Локальні файли та середовища
-.venv/
+.env
 __pycache__/
 *.pyc
-.env
-
-# База даних та тимчасові файли
+*.pyo
+*.pyd
+.Python
+env/
+venv/
 *.db
-*.log
-
-# macOS
-.DS_Store

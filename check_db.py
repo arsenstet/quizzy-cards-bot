@@ -7,7 +7,7 @@ def view_all_data():
         user=os.getenv("DB_USER"),
         password=os.getenv("DB_PASSWORD"),
         host=os.getenv("DB_HOST"),
-        port=os.getenv("DB_PORT", "5432")
+        port=os.getenv("DB_PORT")
     )
     c = conn.cursor()
     c.execute("SELECT * FROM users")

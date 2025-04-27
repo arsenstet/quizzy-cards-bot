@@ -8,7 +8,7 @@ def init_db():
         user=os.getenv("DB_USER"),
         password=os.getenv("DB_PASSWORD"),
         host=os.getenv("DB_HOST"),
-        port=os.getenv("DB_PORT", "5432")
+        port=os.getenv("DB_PORT")
     )
     c = conn.cursor()
     c.execute('''
@@ -36,7 +36,7 @@ def add_user(user_id, username):
         user=os.getenv("DB_USER"),
         password=os.getenv("DB_PASSWORD"),
         host=os.getenv("DB_HOST"),
-        port=os.getenv("DB_PORT", "5432")
+        port=os.getenv("DB_PORT")
     )
     c = conn.cursor()
     c.execute('INSERT INTO users (user_id, username) VALUES (%s, %s) ON CONFLICT (user_id) DO NOTHING', (user_id, username))
@@ -49,7 +49,7 @@ def save_quiz_result(user_id, word, correct):
         user=os.getenv("DB_USER"),
         password=os.getenv("DB_PASSWORD"),
         host=os.getenv("DB_HOST"),
-        port=os.getenv("DB_PORT", "5432")
+        port=os.getenv("DB_PORT")
     )
     c = conn.cursor()
     c.execute('INSERT INTO quiz_results (user_id, word, correct) VALUES (%s, %s, %s)', (user_id, word, correct))
@@ -62,7 +62,7 @@ def get_user_stats(user_id):
         user=os.getenv("DB_USER"),
         password=os.getenv("DB_PASSWORD"),
         host=os.getenv("DB_HOST"),
-        port=os.getenv("DB_PORT", "5432")
+        port=os.getenv("DB_PORT")
     )
     c = conn.cursor()
     c.execute('SELECT COUNT(*) as total_words, SUM(CASE WHEN correct THEN 1 ELSE 0 END) as correct_answers FROM quiz_results WHERE user_id = %s', (user_id,))
@@ -76,7 +76,7 @@ def view_all_data():
         user=os.getenv("DB_USER"),
         password=os.getenv("DB_PASSWORD"),
         host=os.getenv("DB_HOST"),
-        port=os.getenv("DB_PORT", "5432")
+        port=os.getenv("DB_PORT")
     )
     c = conn.cursor()
     c.execute("SELECT * FROM users")
