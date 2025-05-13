@@ -28,7 +28,8 @@ def init_db():
             user=DB_USER,
             password=DB_PASSWORD,
             host=DB_HOST,
-            port=DB_PORT
+            port=DB_PORT,
+            sslmode="require"  # Додаємо підтримку SSL
         )
         c = conn.cursor()
 
@@ -69,7 +70,8 @@ def add_user(user_id, username):
             user=DB_USER,
             password=DB_PASSWORD,
             host=DB_HOST,
-            port=DB_PORT
+            port=DB_PORT,
+            sslmode="require"
         )
         c = conn.cursor()
         c.execute('INSERT INTO users (user_id, username) VALUES (%s, %s) ON CONFLICT (user_id) DO NOTHING', (user_id, username))
@@ -88,7 +90,8 @@ def save_quiz_result(user_id, word, is_correct):
             user=DB_USER,
             password=DB_PASSWORD,
             host=DB_HOST,
-            port=DB_PORT
+            port=DB_PORT,
+            sslmode="require"
         )
         c = conn.cursor()
         c.execute('INSERT INTO quiz_results (user_id, word, is_correct) VALUES (%s, %s, %s)', (user_id, word, is_correct))
@@ -107,7 +110,8 @@ def get_user_stats(user_id):
             user=DB_USER,
             password=DB_PASSWORD,
             host=DB_HOST,
-            port=DB_PORT
+            port=DB_PORT,
+            sslmode="require"
         )
         c = conn.cursor()
         c.execute('SELECT COUNT(*) FROM quiz_results WHERE user_id = %s', (user_id,))
@@ -128,7 +132,8 @@ def view_all_data():
             user=DB_USER,
             password=DB_PASSWORD,
             host=DB_HOST,
-            port=DB_PORT
+            port=DB_PORT,
+            sslmode="require"
         )
         c = conn.cursor()
         c.execute('SELECT * FROM users')
