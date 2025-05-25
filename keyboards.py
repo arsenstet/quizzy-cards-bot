@@ -27,7 +27,7 @@ def get_finish_inline_keyboard():
 
 def get_back_and_main_menu_keyboard():
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="⬅️ Назад", callback_data="start_quiz")],
+        [InlineKeyboardButton(text="🎲 Випадковий текст", callback_data="random_text")],  # Нова кнопка
         [InlineKeyboardButton(text="🏠 Головне меню", callback_data="main_menu")]
     ])
     return keyboard

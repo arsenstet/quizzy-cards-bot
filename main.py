@@ -11,7 +11,8 @@ from keyboards import get_language_inline_keyboard, get_main_menu_inline_keyboar
 from utils import translate_word
 from database import init_db, add_user, save_quiz_result, get_user_stats, view_all_data
 from dotenv import load_dotenv
-from langdetect import detect  # Додаємо бібліотеку для визначення мови
+from langdetect import detect
+import wikipediaapi
 
 # Завантаження змінних середовища
 load_dotenv()
@@ -35,6 +36,9 @@ IS_LOCAL = os.getenv("IS_LOCAL", "true").lower() == "true"
 # Створюємо окремий цикл подій для обробки асинхронних викликів у Flask
 loop = asyncio.new_event_loop()
 asyncio.set_event_loop(loop)
+
+# Ініціалізація Wikipedia API
+wiki_wiki = wikipediaapi.Wikipedia('en')  # Використовуємо англійську Вікіпедію
 
 @dp.message(CommandStart())
 async def handle_start(message: types.Message):
@@ -125,15 +129,14 @@ async def handle_callback_query(callback: types.CallbackQuery):
         user_state[chat_id]["stage"] = "waiting_for_text"
         new_text = (
             "📍 *Введення тексту*\n"
-            "📝 *Надішли текст або посилання для аналізу:*"
+            "📝 *Надішли текст або посилання для аналізу:*\n"
+            "• Або обери *Випадковий текст* для квіза з випадкової статті"
         )
         try:
             if current_text != new_text:
                 await callback.message.edit_text(
                     new_text,
-                    reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                        [InlineKeyboardButton(text="🏠 Головне меню", callback_data="main_menu")]
-                    ]),
+                    reply_markup=get_back_and_main_menu_keyboard(),
                     parse_mode="MarkdownV2"
                 )
             await callback.answer()
@@ -209,7 +212,7 @@ async def handle_callback_query(callback: types.CallbackQuery):
             "👋 *Quizzy Cards* — це бот для вивчення нових слів\\!\n"
             "📚 Я створюю квізи з текстів або посилань, допомагаючи тобі запам’ятовувати ключові слова та їх переклади\\.\n\n"
             "*Основний функціонал:*\n"
-            "• 📝 *Почати квіз* — введи текст або посилання, і я створю квіз із ключовими словами\\.\n"
+            "• 📝 *Почати квіз* — введи текст, посилання або обери випадковий текст для квіза\\.\n"
             "• 📊 *Статистика* — переглядай свій прогрес\\.\n"
             "• 🌐 *Змінити мову* — обери мову тексту для квіза\\.\n\n"
             "*Команди:*\n"
@@ -231,6 +234,77 @@ async def handle_callback_query(callback: types.CallbackQuery):
         except TelegramBadRequest as e:
             logging.error(f"Failed to edit message: {e}")
             await callback.answer()
+
+    elif data == "random_text":
+        try:
+            # Отримуємо випадкову статтю з Вікіпедії
+            random_page = wiki_wiki.random(pages=1)[0]
+            page = wiki_wiki.page(random_page)
+            article_text = page.text
+            if not article_text or len(article_text) < 100:  # Перевірка, чи текст придатний
+                await callback.message.answer(
+                    "📍 *Помилка*\n"
+                    "❌ *Не вдалося отримати придатний випадковий текст\\. Спробуй ще раз\\.*",
+                    reply_markup=get_back_and_main_menu_keyboard(),
+                    parse_mode="MarkdownV2"
+                )
+                return
+
+            # Перевірка мови (повинна бути англійська)
+            detected_language = detect(article_text)
+            if detected_language != "en":
+                await callback.message.answer(
+                    "📍 *Попередження*\n"
+                    "⚠️ *Випадковий текст не англійською мовою\\. Спробуй ще раз\\.*",
+                    reply_markup=get_back_and_main_menu_keyboard(),
+                    parse_mode="MarkdownV2"
+                )
+                return
+
+            # Витягуємо ключові слова
+            words = extract_important_words(article_text)
+            if words:
+                if isinstance(words, dict):
+                    words = words[0]
+                await callback.message.answer(
+                    f"📍 *Підготовка квіза*\n"
+                    f"✨ *Я знайшов ключові слова з випадкової статті \"{page.title}\":* _{', '.join(words)}_\\.\n"
+                    f"Готовий почати квіз? 🚀",
+                    parse_mode="MarkdownV2"
+                )
+                if len(words) < 5:
+                    await callback.message.answer(
+                        f"📍 *Попередження*\n"
+                        "⚠️ Знайдено мало слів\\. Можливо, текст надто короткий\\.\n"
+                        "Усе одно продовжимо\\!",
+                        parse_mode="MarkdownV2"
+                    )
+                user_state[chat_id] = {
+                    "stage": "quiz",
+                    "words": words,
+                    "current_word_index": 0,
+                    "attempts": 3,
+                    "score": 0,
+                    "total_words": len(words),
+                    "language": user_state.get(chat_id, {}).get("language", "en")
+                }
+                await send_next_word(chat_id)
+            else:
+                await callback.message.answer(
+                    "📍 *Помилка*\n"
+                    "❌ *Не вдалося знайти важливі слова у випадковому тексті\\. Спробуй ще раз\\.*",
+                    reply_markup=get_back_and_main_menu_keyboard(),
+                    parse_mode="MarkdownV2"
+                )
+        except Exception as e:
+            logging.error(f"Error fetching random text: {e}")
+            await callback.message.answer(
+                "📍 *Помилка*\n"
+                "❌ *Помилка при отриманні випадкового тексту\\. Спробуй ще раз\\.*",
+                reply_markup=get_back_and_main_menu_keyboard(),
+                parse_mode="MarkdownV2"
+            )
+        await callback.answer()
 
     elif data == "repeat_quiz":
         state = user_state.get(chat_id, {})
@@ -277,15 +351,14 @@ async def handle_callback_query(callback: types.CallbackQuery):
         user_state[chat_id]["stage"] = "waiting_for_text"
         new_text = (
             "📍 *Введення тексту*\n"
-            "📝 *Надішли новий текст або посилання для аналізу:*"
+            "📝 *Надішли новий текст або посилання для аналізу:*\n"
+            "• Або обери *Випадковий текст* для квіза з випадкової статті"
         )
         try:
             if current_text != new_text:
                 await callback.message.edit_text(
                     new_text,
-                    reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                        [InlineKeyboardButton(text="🏠 Головне меню", callback_data="main_menu")]
-                    ]),
+                    reply_markup=get_back_and_main_menu_keyboard(),
                     parse_mode="MarkdownV2"
                 )
             await callback.answer()
@@ -308,9 +381,7 @@ async def handle_message(message: types.Message):
                     "📍 *Введення тексту*\n"
                     "❌ *Не вдалося витягти текст із посилання\\.*",
                     parse_mode="MarkdownV2",
-                    reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                        [InlineKeyboardButton(text="🏠 Головне меню", callback_data="main_menu")]
-                    ])
+                    reply_markup=get_back_and_main_menu_keyboard()
                 )
                 return
             text_to_analyze = article_text
@@ -328,9 +399,7 @@ async def handle_message(message: types.Message):
                     f"⚠️ *Вибрана мова — {chosen_language.upper()}, але текст здається написаним мовою {detected_language.upper()}\\.*\n"
                     f"Будь ласка, надішли текст правильною мовою\\.",
                     parse_mode="MarkdownV2",
-                    reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                        [InlineKeyboardButton(text="🏠 Головне меню", callback_data="main_menu")]
-                    ])
+                    reply_markup=get_back_and_main_menu_keyboard()
                 )
                 return
         except Exception as e:
@@ -340,9 +409,7 @@ async def handle_message(message: types.Message):
                 "❌ *Не вдалося визначити мову тексту\\.*\n"
                 "Будь ласка, спробуй ще раз\\.",
                 parse_mode="MarkdownV2",
-                reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                    [InlineKeyboardButton(text="🏠 Головне меню", callback_data="main_menu")]
-                ])
+                reply_markup=get_back_and_main_menu_keyboard()
             )
             return
 
@@ -380,9 +447,7 @@ async def handle_message(message: types.Message):
                 "📍 *Введення тексту*\n"
                 "❌ *Не вдалося знайти важливі слова\\.*",
                 parse_mode="MarkdownV2",
-                reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                    [InlineKeyboardButton(text="🏠 Головне меню", callback_data="main_menu")]
-                ])
+                reply_markup=get_back_and_main_menu_keyboard()
             )
 
     elif user_state.get(chat_id, {}).get("stage") == "quiz":
