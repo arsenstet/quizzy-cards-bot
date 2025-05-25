@@ -3,12 +3,7 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 def get_language_inline_keyboard():
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [
-            InlineKeyboardButton(text="🇺🇸 English", callback_data="lang:en"),
-            InlineKeyboardButton(text="🇺🇦 Українська", callback_data="lang:ua")
-        ],
-        [
-            InlineKeyboardButton(text="🇩🇪 Deutsch", callback_data="lang:de"),
-            InlineKeyboardButton(text="🇫🇷 Français", callback_data="lang:fr")
+            InlineKeyboardButton(text="🇺🇸 English", callback_data="lang:en")
         ]
     ])
     return keyboard
@@ -18,7 +13,7 @@ def get_main_menu_inline_keyboard():
         [InlineKeyboardButton(text="📝 Почати квіз", callback_data="start_quiz")],
         [InlineKeyboardButton(text="📊 Статистика", callback_data="view_stats")],
         [InlineKeyboardButton(text="🌐 Змінити мову", callback_data="change_language")],
-        [InlineKeyboardButton(text="ℹ️ Довідка", callback_data="show_help")]  # Нова кнопка
+        [InlineKeyboardButton(text="ℹ️ Довідка", callback_data="show_help")]
     ])
     return keyboard
 

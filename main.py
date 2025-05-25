@@ -11,6 +11,7 @@ from keyboards import get_language_inline_keyboard, get_main_menu_inline_keyboar
 from utils import translate_word
 from database import init_db, add_user, save_quiz_result, get_user_stats, view_all_data
 from dotenv import load_dotenv
+from langdetect import detect  # Додаємо бібліотеку для визначення мови
 
 # Завантаження змінних середовища
 load_dotenv()
@@ -299,6 +300,7 @@ async def handle_message(message: types.Message):
     text = message.text
 
     if user_state.get(chat_id, {}).get("stage") == "waiting_for_text":
+        # Визначаємо, чи це посилання, і витягуємо текст
         if text.startswith("http://") or text.startswith("https://"):
             article_text = extract_text_from_url(text)
             if not article_text:
@@ -311,9 +313,41 @@ async def handle_message(message: types.Message):
                     ])
                 )
                 return
-            words = extract_important_words(article_text)
+            text_to_analyze = article_text
         else:
-            words = extract_important_words(text)
+            text_to_analyze = text
+
+        # Перевірка мови тексту
+        chosen_language = user_state.get(chat_id, {}).get("language", "en")
+        try:
+            detected_language = detect(text_to_analyze)
+            logging.info(f"Detected language: {detected_language}, Chosen language: {chosen_language}")
+            if detected_language != chosen_language:
+                await message.answer(
+                    f"📍 *Попередження*\n"
+                    f"⚠️ *Вибрана мова — {chosen_language.upper()}, але текст здається написаним мовою {detected_language.upper()}\\.*\n"
+                    f"Будь ласка, надішли текст правильною мовою\\.",
+                    parse_mode="MarkdownV2",
+                    reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                        [InlineKeyboardButton(text="🏠 Головне меню", callback_data="main_menu")]
+                    ])
+                )
+                return
+        except Exception as e:
+            logging.error(f"Language detection failed: {e}")
+            await message.answer(
+                "📍 *Помилка*\n"
+                "❌ *Не вдалося визначити мову тексту\\.*\n"
+                "Будь ласка, спробуй ще раз\\.",
+                parse_mode="MarkdownV2",
+                reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                    [InlineKeyboardButton(text="🏠 Головне меню", callback_data="main_menu")]
+                ])
+            )
+            return
+
+        # Якщо мова збігається, продовжуємо обробку
+        words = extract_important_words(text_to_analyze)
 
         if words:
             if isinstance(words, dict):
