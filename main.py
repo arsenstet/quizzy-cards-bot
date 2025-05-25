@@ -37,8 +37,11 @@ IS_LOCAL = os.getenv("IS_LOCAL", "true").lower() == "true"
 loop = asyncio.new_event_loop()
 asyncio.set_event_loop(loop)
 
-# Ініціалізація Wikipedia API
-wiki_wiki = wikipediaapi.Wikipedia('en')  # Використовуємо англійську Вікіпедію
+# Ініціалізація Wikipedia API з коректним user_agent
+wiki_wiki = wikipediaapi.Wikipedia(
+    user_agent="QuizzyCardsBot/1.0 (https://github.com/arsenstet/quizzy-cards-bot; arsen.stetsyuk.05@gmail.com)",
+    language="en"
+)
 
 @dp.message(CommandStart())
 async def handle_start(message: types.Message):
