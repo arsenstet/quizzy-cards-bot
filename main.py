@@ -12,7 +12,7 @@ from utils import translate_word
 from database import init_db, add_user, save_quiz_result, get_user_stats, view_all_data
 from dotenv import load_dotenv
 from langdetect import detect
-import wikipedia  # Змінюємо бібліотеку на wikipedia
+import wikipedia
 
 # Завантаження змінних середовища
 load_dotenv()
@@ -39,6 +39,11 @@ asyncio.set_event_loop(loop)
 
 # Налаштування Wikipedia
 wikipedia.set_lang("en")  # Встановлюємо мову для Вікіпедії (англійська)
+
+def escape_markdown(text):
+    """Екранує спеціальні символи для MarkdownV2 у Telegram."""
+    escape_chars = r'_*[]()~`>#+-=|{}.!'
+    return ''.join('\\' + char if char in escape_chars else char for char in text)
 
 @dp.message(CommandStart())
 async def handle_start(message: types.Message):
@@ -267,9 +272,12 @@ async def handle_callback_query(callback: types.CallbackQuery):
             if words:
                 if isinstance(words, dict):
                     words = words[0]
+                # Екрануємо спеціальні символи в назві статті та словах
+                escaped_title = escape_markdown(page_title)
+                escaped_words = ', '.join(escape_markdown(word) for word in words)
                 await callback.message.answer(
                     f"📍 *Підготовка квіза*\n"
-                    f"✨ *Я знайшов ключові слова з випадкової статті \"{page_title}\":* _{', '.join(words)}_\\.\n"
+                    f"✨ *Я знайшов ключові слова з випадкової статті \"{escaped_title}\":* _{escaped_words}_\\.\n"
                     f"Готовий почати квіз? 🚀",
                     parse_mode="MarkdownV2"
                 )
@@ -420,9 +428,11 @@ async def handle_message(message: types.Message):
         if words:
             if isinstance(words, dict):
                 words = words[0]
+            # Екрануємо спеціальні символи в словах
+            escaped_words = ', '.join(escape_markdown(word) for word in words)
             await message.answer(
                 f"📍 *Підготовка квіза*\n"
-                f"✨ *Я знайшов ключові слова:* _{', '.join(words)}_\\.\n"
+                f"✨ *Я знайшов ключові слова:* _{escaped_words}_\\.\n"
                 f"Готовий почати квіз? 🚀",
                 parse_mode="MarkdownV2"
             )
@@ -466,7 +476,7 @@ async def send_next_word(chat_id):
             chat_id,
             f"📍 *Квіз*\n"
             f"{progress}\n"
-            f"Переклади слово _*{word}*_ українською:\n"
+            f"Переклади слово _*{escape_markdown(word)}*_ українською:\n"
             f"Спроби: *{state['attempts']}*",
             parse_mode="MarkdownV2",
             reply_markup=get_back_and_main_menu_keyboard()
