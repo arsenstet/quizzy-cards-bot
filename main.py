@@ -7,7 +7,7 @@ from aiogram.filters import Command, CommandStart
 from aiogram.exceptions import TelegramBadRequest
 from flask import Flask, request
 from text_analyzer import extract_important_words, extract_text_from_url
-from keyboards import get_language_inline_keyboard, get_main_menu_inline_keyboard, get_finish_inline_keyboard, get_back_and_main_menu_keyboard
+from keyboards import get_language_inline_keyboard, get_main_menu_inline_keyboard, get_finish_inline_keyboard, get_back_and_main_menu_keyboard, get_quiz_menu_keyboard
 from utils import translate_word
 from database import init_db, add_user, save_quiz_result, get_user_stats, view_all_data
 from dotenv import load_dotenv
@@ -479,7 +479,7 @@ async def send_next_word(chat_id):
             f"Переклади слово _*{escape_markdown(word)}*_ українською:\n"
             f"Спроби: *{state['attempts']}*",
             parse_mode="MarkdownV2",
-            reply_markup=get_back_and_main_menu_keyboard()
+            reply_markup=get_quiz_menu_keyboard()  # Змінено на нову клавіатуру
         )
     else:
         await finish_quiz(chat_id)
@@ -502,7 +502,8 @@ async def check_answer(chat_id, user_answer):
             f"📍 *Квіз*\n"
             f"✅ *Правильно\\!* 🎉\n"
             f"Переходимо до наступного слова\\!",
-            parse_mode="MarkdownV2"
+            parse_mode="MarkdownV2",
+            reply_markup=get_quiz_menu_keyboard()  # Змінено на нову клавіатуру
         )
         await send_next_word(chat_id)
     else:
@@ -516,7 +517,7 @@ async def check_answer(chat_id, user_answer):
                 f"❌ *Неправильно\\.*\n"
                 f"Спроби: *{state['attempts']}*",
                 parse_mode="MarkdownV2",
-                reply_markup=get_back_and_main_menu_keyboard()
+                reply_markup=get_quiz_menu_keyboard()  # Змінено на нову клавіатуру
             )
         else:
             state["current_word_index"] += 1
@@ -527,7 +528,8 @@ async def check_answer(chat_id, user_answer):
                 f"📍 *Квіз*\n"
                 f"⏳ *Спроби закінчились\\!*\n"
                 f"Правильний переклад: _*{correct_translation}*_\\.",
-                parse_mode="MarkdownV2"
+                parse_mode="MarkdownV2",
+                reply_markup=get_quiz_menu_keyboard()  # Змінено на нову клавіатуру
             )
             await send_next_word(chat_id)
 
