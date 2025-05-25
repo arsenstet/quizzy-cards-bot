@@ -12,7 +12,7 @@ from utils import translate_word
 from database import init_db, add_user, save_quiz_result, get_user_stats, view_all_data
 from dotenv import load_dotenv
 from langdetect import detect
-import wikipediaapi
+import wikipedia  # Змінюємо бібліотеку на wikipedia
 
 # Завантаження змінних середовища
 load_dotenv()
@@ -37,11 +37,8 @@ IS_LOCAL = os.getenv("IS_LOCAL", "true").lower() == "true"
 loop = asyncio.new_event_loop()
 asyncio.set_event_loop(loop)
 
-# Ініціалізація Wikipedia API з коректним user_agent
-wiki_wiki = wikipediaapi.Wikipedia(
-    user_agent="QuizzyCardsBot/1.0 (https://github.com/arsenstet/quizzy-cards-bot; arsen.stetsyuk.05@gmail.com)",
-    language="en"
-)
+# Налаштування Wikipedia
+wikipedia.set_lang("en")  # Встановлюємо мову для Вікіпедії (англійська)
 
 @dp.message(CommandStart())
 async def handle_start(message: types.Message):
@@ -241,9 +238,10 @@ async def handle_callback_query(callback: types.CallbackQuery):
     elif data == "random_text":
         try:
             # Отримуємо випадкову статтю з Вікіпедії
-            random_page = wiki_wiki.random(pages=1)[0]
-            page = wiki_wiki.page(random_page)
-            article_text = page.text
+            random_page = wikipedia.random(1)  # Отримуємо 1 випадкову статтю
+            page = wikipedia.page(random_page)
+            article_text = page.content
+            page_title = page.title
             if not article_text or len(article_text) < 100:  # Перевірка, чи текст придатний
                 await callback.message.answer(
                     "📍 *Помилка*\n"
@@ -271,7 +269,7 @@ async def handle_callback_query(callback: types.CallbackQuery):
                     words = words[0]
                 await callback.message.answer(
                     f"📍 *Підготовка квіза*\n"
-                    f"✨ *Я знайшов ключові слова з випадкової статті \"{page.title}\":* _{', '.join(words)}_\\.\n"
+                    f"✨ *Я знайшов ключові слова з випадкової статті \"{page_title}\":* _{', '.join(words)}_\\.\n"
                     f"Готовий почати квіз? 🚀",
                     parse_mode="MarkdownV2"
                 )
