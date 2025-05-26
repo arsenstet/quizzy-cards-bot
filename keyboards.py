@@ -37,10 +37,3 @@ def get_quiz_menu_keyboard():
         [InlineKeyboardButton(text="🏠 Головне меню", callback_data="main_menu")]
     ])
     return keyboard
-
-def get_stats_menu_keyboard():
-    keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🏆 Лідерборд", callback_data="view_leaderboard")],
-        [InlineKeyboardButton(text="🏠 Головне меню", callback_data="main_menu")]
-    ])
-    return keyboard
