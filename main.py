@@ -62,15 +62,15 @@ async def handle_start(message: types.Message):
     username = message.from_user.username or message.from_user.first_name
     add_user(chat_id, username)
     await message.answer(
-        "👋 *Вітаю\\!* Я *Quizzy Cards* — твій помічник у вивченні нових слів\\.\n"
-        "📚 Надсилай текст або посилання, а я створю квіз із ключовими словами\\.\n"
-        "📊 Переглядай статистику своїх відповідей\\!\n\n"
-        "*Обери мову, щоб почати:*",
+        "👋 Вітаю! Я Quizzy Cards — твій помічник у вивченні нових слів.\n"
+        "📚 Надсилай текст або посилання, а я створю квіз із ключовими словами.\n"
+        "📊 Переглядай статистику своїх відповідей!\n\n"
+        "Обери мову, щоб почати:",
         parse_mode="MarkdownV2"
     )
     await message.answer(
-        "📍 *Вибір мови*\n"
-        "Обери мову тексту для квіза\\.",
+        "📍 Вибір мови\n"
+        "Обери мову тексту для квіза.",
         reply_markup=get_language_inline_keyboard(),
         parse_mode="MarkdownV2"
     )
@@ -83,11 +83,11 @@ async def handle_stats(message: types.Message):
     total_words, correct_answers, score = get_user_stats(chat_id)
     rank_title = get_rank_title(score)
     await message.answer(
-        f"📍 *Статистика*\n"
-        f"*Твій прогрес:*\n"
-        f"• Вивчено слів: *{escape_markdown(str(total_words))}*\n"
-        f"• Правильних відповідей: *{escape_markdown(str(correct_answers))}*\n"
-        f"• Балів: *{escape_markdown(str(score))}* \\({escape_markdown(rank_title)}\\)",
+        f"📍 Статистика\n"
+        f"Твій прогрес:\n"
+        f"• Вивчено слів: {total_words}\n"
+        f"• Правильних відповідей: {correct_answers}\n"
+        f"• Балів: {score} ({rank_title})",
         reply_markup=get_stats_menu_keyboard(),
         parse_mode="MarkdownV2"
     )
@@ -97,13 +97,13 @@ async def handle_stats(message: types.Message):
 async def handle_viewdata(message: types.Message):
     chat_id = message.chat.id
     if chat_id != ADMIN_ID:
-        await message.answer("❌ *Доступ заборонено\\!*", parse_mode="MarkdownV2")
+        await message.answer("❌ Доступ заборонено!", parse_mode="MarkdownV2")
         return
     users, results = view_all_data()
-    user_text = "\\n".join([f"ID: *{escape_markdown(str(u[0]))}*, Username: *{escape_markdown(u[1])}*, Created: *{escape_markdown(str(u[2]))}*" for u in users])
-    result_text = "\\n".join([f"User ID: *{escape_markdown(str(r[0]))}*, Word: *{escape_markdown(r[1])}*, Correct: *{escape_markdown(str(r[2]))}*, Time: *{escape_markdown(str(r[3]))}*" for r in results])
+    user_text = "\n".join([f"ID: {u[0]}, Username: {u[1]}, Created: {u[2]}" for u in users])
+    result_text = "\n".join([f"User ID: {r[0]}, Word: {r[1]}, Correct: {r[2]}, Time: {r[3]}" for r in results])
     await message.answer(
-        f"*Користувачі:*\n{user_text or 'Пусто'}\n\n*Результати квіза:*\n{result_text or 'Пусто'}",
+        f"Користувачі:\n{user_text or 'Пусто'}\n\nРезультати квіза:\n{result_text or 'Пусто'}",
         reply_markup=InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(text="🏠 Головне меню", callback_data="main_menu")]
         ]),
@@ -122,12 +122,12 @@ async def handle_callback_query(callback: types.CallbackQuery):
         language = data.split(":")[1]
         user_state[chat_id] = {"stage": "main_menu", "language": language}
         new_text = (
-            "📍 *Головне меню*\n"
-            "✅ *Мову вибрано\\!*\n"
-            "• 📝 *Почати квіз* — створюй картки зі слів\n"
-            "• 📊 *Статистика* — твій прогрес\n"
-            "• 🌐 *Змінити мову* — вибери іншу мову\n"
-            "• ℹ️ *Довідка* — інформація про бота"
+            "📍 Головне меню\n"
+            "✅ Мову вибрано!\n"
+            "• 📝 Почати квіз — створюй картки зі слів\n"
+            "• 📊 Статистика — твій прогрес\n"
+            "• 🌐 Змінити мову — вибери іншу мову\n"
+            "• ℹ️ Довідка — інформація про бота"
         )
         try:
             if current_text != new_text:
@@ -144,9 +144,9 @@ async def handle_callback_query(callback: types.CallbackQuery):
     elif data == "start_quiz":
         user_state[chat_id]["stage"] = "waiting_for_text"
         new_text = (
-            "📍 *Введення тексту*\n"
-            "📝 *Надішли текст або посилання для аналізу:*\n"
-            "• Або обери *Випадковий текст* для квіза з випадкової статті"
+            "📍 Введення тексту\n"
+            "📝 Надішли текст або посилання для аналізу:\n"
+            "• Або обери Випадковий текст для квіза з випадкової статті"
         )
         try:
             if current_text != new_text:
@@ -164,11 +164,11 @@ async def handle_callback_query(callback: types.CallbackQuery):
         total_words, correct_answers, score = get_user_stats(chat_id)
         rank_title = get_rank_title(score)
         new_text = (
-            "📍 *Статистика*\n"
-            f"*Твій прогрес:*\n"
-            f"• Вивчено слів: *{escape_markdown(str(total_words))}*\n"
-            f"• Правильних відповідей: *{escape_markdown(str(correct_answers))}*\n"
-            f"• Балів: *{escape_markdown(str(score))}* \\({escape_markdown(rank_title)}\\)"
+            "📍 Статистика\n"
+            f"Твій прогрес:\n"
+            f"• Вивчено слів: {total_words}\n"
+            f"• Правильних відповідей: {correct_answers}\n"
+            f"• Балів: {score} ({rank_title})"
         )
         try:
             if current_text != new_text:
@@ -186,25 +186,21 @@ async def handle_callback_query(callback: types.CallbackQuery):
         top_players, total_users = get_leaderboard()
         rank = get_user_rank(chat_id)
         user = (await bot.get_chat_member(chat_id, chat_id)).user.username or (await bot.get_chat_member(chat_id, chat_id)).user.first_name
-        user = escape_markdown(user)  # Екрануємо username
         score = get_user_stats(chat_id)[2]
-        leaderboard_text = f"📊 *Лідерборд* \\(Всього гравців: {escape_markdown(str(total_users))}\\)\n"
-        leaderboard_text += f"Твоє місце: *\\#{escape_markdown(str(rank))}* \\({user}, {escape_markdown(str(score))} балів\\)\n\n"
-        leaderboard_text += "🏆 *Топ-5 гравців:*\n"
+        leaderboard_text = f"📊 Лідерборд (Всього гравців: {total_users})\n"
+        leaderboard_text += f"Твоє місце: #{rank} ({user}: {score} балів)\n\n"
+        leaderboard_text += "🏆 Топ-5 гравців:\n"
         for i, (user_id, user, score) in enumerate(top_players, 1):
-            user = escape_markdown(user)  # Екрануємо ім'я користувача з топу
-            # Замінюємо '-' на '—' (довге тире), яке не потребує екранування
-            leaderboard_text += f"{escape_markdown(str(i))}. *{user}* \- *{escape_markdown(str(score))}* балів\n"
+            leaderboard_text += f"{i}. {user}: {score} балів\n"
         if not top_players:
             leaderboard_text += "Ще немає гравців у топі.\n"
-        logging.info(f"Leaderboard text: {leaderboard_text}")  # Логування повного тексту
+        logging.info(f"Leaderboard text before sending: {leaderboard_text}")  # Детальне логування
         try:
             await callback.message.edit_text(
                 leaderboard_text,
                 reply_markup=InlineKeyboardMarkup(inline_keyboard=[
                     [InlineKeyboardButton(text="🏠 Головне меню", callback_data="main_menu")]
-                ]),
-                parse_mode="MarkdownV2"
+                ])
             )
             await callback.answer("🏆 Лідерборд оновлено!")
         except TelegramBadRequest as e:
@@ -214,8 +210,8 @@ async def handle_callback_query(callback: types.CallbackQuery):
     elif data == "change_language":
         user_state[chat_id]["stage"] = "choose_language"
         new_text = (
-            "📍 *Вибір мови*\n"
-            "🌐 *Обери мову тексту:*"
+            "📍 Вибір мови\n"
+            "🌐 Обери мову тексту:"
         )
         try:
             if current_text != new_text:
@@ -232,12 +228,12 @@ async def handle_callback_query(callback: types.CallbackQuery):
     elif data == "main_menu":
         user_state[chat_id]["stage"] = "main_menu"
         new_text = (
-            "📍 *Головне меню*\n"
-            "🏠 *Вибери дію:*\n"
-            "• 📝 *Почати квіз* — створюй картки зі слів\n"
-            "• 📊 *Статистика* — твій прогрес\n"
-            "• 🌐 *Змінити мову* — вибери іншу мову\n"
-            "• ℹ️ *Довідка* — інформація про бота"
+            "📍 Головне меню\n"
+            "🏠 Вибери дію:\n"
+            "• 📝 Почати квіз — створюй картки зі слів\n"
+            "• 📊 Статистика — твій прогрес\n"
+            "• 🌐 Змінити мову — вибери іншу мову\n"
+            "• ℹ️ Довідка — інформація про бота"
         )
         try:
             if current_text != new_text:
@@ -253,18 +249,18 @@ async def handle_callback_query(callback: types.CallbackQuery):
 
     elif data == "show_help":
         new_text = (
-            "📍 *Довідка*\n\n"
-            "👋 *Quizzy Cards* — це бот для вивчення нових слів\\!\n"
-            "📚 Я створюю квізи з текстів або посилань, допомагаючи тобі запам’ятовувати ключові слова та їх переклади\\.\n\n"
-            "*Основний функціонал:*\n"
-            "• 📝 *Почати квіз* — введи текст, посилання або обери випадковий текст для квіза\\.\n"
-            "• 📊 *Статистика* — переглядай свій прогрес та лідерборд\\.\n"
-            "• 🌐 *Змінити мову* — обери мову тексту для квіза\\.\n\n"
-            "*Команди:*\n"
+            "📍 Довідка\n\n"
+            "👋 Quizzy Cards — це бот для вивчення нових слів!\n"
+            "📚 Я створюю квізи з текстів або посилань, допомагаючи тобі запам’ятовувати ключові слова та їх переклади.\n\n"
+            "Основний функціонал:\n"
+            "• 📝 Почати квіз — введи текст, посилання або обери випадковий текст для квіза.\n"
+            "• 📊 Статистика — переглядай свій прогрес та лідерборд.\n"
+            "• 🌐 Змінити мову — обери мову тексту для квіза.\n\n"
+            "Команди:\n"
             "• /start — почати роботу з ботом\n"
             "• /stats — переглянути статистику\n"
-            "• /viewdata — переглянути всі дані \\(тільки для адміністратора\\)\n\n"
-            "✨ Надсилай текст або обирай опції у меню, щоб розпочати\\!"
+            "• /viewdata — переглянути всі дані (тільки для адміністратора)\n\n"
+            "✨ Надсилай текст або обирай опції у меню, щоб розпочати!"
         )
         try:
             if current_text != new_text:
@@ -289,8 +285,8 @@ async def handle_callback_query(callback: types.CallbackQuery):
             page_title = page.title
             if not article_text or len(article_text) < 100:  # Перевірка, чи текст придатний
                 await callback.message.answer(
-                    "📍 *Помилка*\n"
-                    "❌ *Не вдалося отримати придатний випадковий текст\\. Спробуй ще раз\\.*",
+                    "📍 Помилка\n"
+                    "❌ Не вдалося отримати придатний випадковий текст. Спробуй ще раз.",
                     reply_markup=get_back_and_main_menu_keyboard(),
                     parse_mode="MarkdownV2"
                 )
@@ -300,8 +296,8 @@ async def handle_callback_query(callback: types.CallbackQuery):
             detected_language = detect(article_text)
             if detected_language != "en":
                 await callback.message.answer(
-                    "📍 *Попередження*\n"
-                    "⚠️ *Випадковий текст не англійською мовою\\. Спробуй ще раз\\.*",
+                    "📍 Попередження\n"
+                    "⚠️ Випадковий текст не англійською мовою. Спробуй ще раз.",
                     reply_markup=get_back_and_main_menu_keyboard(),
                     parse_mode="MarkdownV2"
                 )
@@ -316,16 +312,16 @@ async def handle_callback_query(callback: types.CallbackQuery):
                 escaped_title = escape_markdown(page_title)
                 escaped_words = ', '.join(escape_markdown(word) for word in words)
                 await callback.message.answer(
-                    f"📍 *Підготовка квіза*\n"
-                    f"✨ *Я знайшов ключові слова з випадкової статті \"{escaped_title}\":* _{escaped_words}_\\.\n"
+                    f"📍 Підготовка квіза\n"
+                    f"✨ Я знайшов ключові слова з випадкової статті \"{escaped_title}\": {escaped_words}.\n"
                     f"Готовий почати квіз? 🚀",
                     parse_mode="MarkdownV2"
                 )
                 if len(words) < 5:
                     await callback.message.answer(
-                        f"📍 *Попередження*\n"
-                        "⚠️ Знайдено мало слів\\. Можливо, текст надто короткий\\.\n"
-                        "Усе одно продовжимо\\!",
+                        f"📍 Попередження\n"
+                        "⚠️ Знайдено мало слів. Можливо, текст надто короткий.\n"
+                        "Усе одно продовжимо!",
                         parse_mode="MarkdownV2"
                     )
                 user_state[chat_id] = {
@@ -340,16 +336,16 @@ async def handle_callback_query(callback: types.CallbackQuery):
                 await send_next_word(chat_id)
             else:
                 await callback.message.answer(
-                    "📍 *Помилка*\n"
-                    "❌ *Не вдалося знайти важливі слова у випадковому тексті\\. Спробуй ще раз\\.*",
+                    "📍 Помилка\n"
+                    "❌ Не вдалося знайти важливі слова у випадковому тексті. Спробуй ще раз.",
                     reply_markup=get_back_and_main_menu_keyboard(),
                     parse_mode="MarkdownV2"
                 )
         except Exception as e:
             logging.error(f"Error fetching random text: {e}")
             await callback.message.answer(
-                "📍 *Помилка*\n"
-                "❌ *Помилка при отриманні випадкового тексту\\. Спробуй ще раз\\.*",
+                "📍 Помилка\n"
+                "❌ Помилка при отриманні випадкового тексту. Спробуй ще раз.",
                 reply_markup=get_back_and_main_menu_keyboard(),
                 parse_mode="MarkdownV2"
             )
@@ -363,8 +359,8 @@ async def handle_callback_query(callback: types.CallbackQuery):
             state["attempts"] = 3
             state["score"] = 0
             new_text = (
-                "📍 *Квіз*\n"
-                "🔄 *Починаємо заново\\!*"
+                "📍 Квіз\n"
+                "🔄 Починаємо заново!"
             )
             try:
                 if current_text != new_text:
@@ -378,8 +374,8 @@ async def handle_callback_query(callback: types.CallbackQuery):
                 await send_next_word(chat_id)
         else:
             new_text = (
-                "📍 *Помилка*\n"
-                "❌ *Немає квіза для повтору\\!*"
+                "📍 Помилка\n"
+                "❌ Немає квіза для повтору!"
             )
             try:
                 if current_text != new_text:
@@ -399,9 +395,9 @@ async def handle_callback_query(callback: types.CallbackQuery):
     elif data == "new_text":
         user_state[chat_id]["stage"] = "waiting_for_text"
         new_text = (
-            "📍 *Введення тексту*\n"
-            "📝 *Надішли новий текст або посилання для аналізу:*\n"
-            "• Або обери *Випадковий текст* для квіза з випадкової статті"
+            "📍 Введення тексту\n"
+            "📝 Надішли новий текст або посилання для аналізу:\n"
+            "• Або обери Випадковий текст для квіза з випадкової статті"
         )
         try:
             if current_text != new_text:
@@ -427,8 +423,8 @@ async def handle_message(message: types.Message):
             article_text = extract_text_from_url(text)
             if not article_text:
                 await message.answer(
-                    "📍 *Введення тексту*\n"
-                    "❌ *Не вдалося витягти текст із посилання\\.*",
+                    "📍 Введення тексту\n"
+                    "❌ Не вдалося витягти текст із посилання.",
                     parse_mode="MarkdownV2",
                     reply_markup=get_back_and_main_menu_keyboard()
                 )
@@ -444,9 +440,9 @@ async def handle_message(message: types.Message):
             logging.info(f"Detected language: {detected_language}, Chosen language: {chosen_language}")
             if detected_language != chosen_language:
                 await message.answer(
-                    f"📍 *Попередження*\n"
-                    f"⚠️ *Вибрана мова — {chosen_language.upper()}, але текст здається написаним мовою {detected_language.upper()}\\.*\n"
-                    f"Будь ласка, надішли текст правильною мовою\\.",
+                    f"📍 Попередження\n"
+                    f"⚠️ Вибрана мова — {chosen_language.upper()}, але текст здається написаним мовою {detected_language.upper()}.\n"
+                    f"Будь ласка, надішли текст правильною мовою.",
                     parse_mode="MarkdownV2",
                     reply_markup=get_back_and_main_menu_keyboard()
                 )
@@ -454,9 +450,9 @@ async def handle_message(message: types.Message):
         except Exception as e:
             logging.error(f"Language detection failed: {e}")
             await message.answer(
-                "📍 *Помилка*\n"
-                "❌ *Не вдалося визначити мову тексту\\.*\n"
-                "Будь ласка, спробуй ще раз\\.",
+                "📍 Помилка\n"
+                "❌ Не вдалося визначити мову тексту.\n"
+                "Будь ласка, спробуй ще раз.",
                 parse_mode="MarkdownV2",
                 reply_markup=get_back_and_main_menu_keyboard()
             )
@@ -471,16 +467,16 @@ async def handle_message(message: types.Message):
             # Екрануємо спеціальні символи в словах
             escaped_words = ', '.join(escape_markdown(word) for word in words)
             await message.answer(
-                f"📍 *Підготовка квіза*\n"
-                f"✨ *Я знайшов ключові слова:* _{escaped_words}_\\.\n"
+                f"📍 Підготовка квіза\n"
+                f"✨ Я знайшов ключові слова: {escaped_words}.\n"
                 f"Готовий почати квіз? 🚀",
                 parse_mode="MarkdownV2"
             )
             if len(words) < 5:
                 await message.answer(
-                    f"📍 *Попередження*\n"
-                    "⚠️ Знайдено мало слів\\. Можливо, текст надто короткий\\.\n"
-                    "Усе одно продовжимо\\!",
+                    f"📍 Попередження\n"
+                    "⚠️ Знайдено мало слів. Можливо, текст надто короткий.\n"
+                    "Усе одно продовжимо!",
                     parse_mode="MarkdownV2"
                 )
             user_state[chat_id] = {
@@ -495,8 +491,8 @@ async def handle_message(message: types.Message):
             await send_next_word(chat_id)
         else:
             await message.answer(
-                "📍 *Введення тексту*\n"
-                "❌ *Не вдалося знайти важливі слова\\.*",
+                "📍 Введення тексту\n"
+                "❌ Не вдалося знайти важливі слова.",
                 parse_mode="MarkdownV2",
                 reply_markup=get_back_and_main_menu_keyboard()
             )
@@ -511,13 +507,13 @@ async def send_next_word(chat_id):
         word = state["words"][state["current_word_index"]]
         translation = translate_word(word)
         state["current_translation"] = translation
-        progress = f"*Слово {escape_markdown(str(state['current_word_index'] + 1))}/{escape_markdown(str(state['total_words']))}*"
+        progress = f"Слово {state['current_word_index'] + 1}/{state['total_words']}"
         await bot.send_message(
             chat_id,
-            f"📍 *Квіз*\n"
+            f"📍 Квіз\n"
             f"{progress}\n"
-            f"Переклади слово _*{escape_markdown(word)}*_ українською:\n"
-            f"Спроби: *{escape_markdown(str(state['attempts']))}*",
+            f"Переклади слово {word} українською:\n"
+            f"Спроби: {state['attempts']}",
             parse_mode="MarkdownV2",
             reply_markup=get_quiz_menu_keyboard()
         )
@@ -539,9 +535,9 @@ async def check_answer(chat_id, user_answer):
         save_quiz_result(chat_id, word, True)
         await bot.send_message(
             chat_id,
-            f"📍 *Квіз*\n"
-            f"✅ *Правильно\\!* 🎉 \\(+1 бал\\)\n"
-            f"Переходимо до наступного слова\\!",
+            f"📍 Квіз\n"
+            f"✅ Правильно! 🎉 (+1 бал)\n"
+            f"Переходимо до наступного слова!",
             parse_mode="MarkdownV2",
             reply_markup=get_quiz_menu_keyboard()
         )
@@ -549,13 +545,13 @@ async def check_answer(chat_id, user_answer):
     else:
         state["attempts"] -= 1
         if state["attempts"] > 0:
-            progress = f"*Слово {escape_markdown(str(state['current_word_index'] + 1))}/{escape_markdown(str(state['total_words']))}*"
+            progress = f"Слово {state['current_word_index'] + 1}/{state['total_words']}"
             await bot.send_message(
                 chat_id,
-                f"📍 *Квіз*\n"
+                f"📍 Квіз\n"
                 f"{progress}\n"
-                f"❌ *Неправильно\\.*\n"
-                f"Спроби: *{escape_markdown(str(state['attempts']))}*",
+                f"❌ Неправильно.\n"
+                f"Спроби: {state['attempts']}",
                 parse_mode="MarkdownV2",
                 reply_markup=get_quiz_menu_keyboard()
             )
@@ -565,9 +561,9 @@ async def check_answer(chat_id, user_answer):
             save_quiz_result(chat_id, word, False)
             await bot.send_message(
                 chat_id,
-                f"📍 *Квіз*\n"
-                f"⏳ *Спроби закінчились\\!*\n"
-                f"Правильний переклад: _*{escape_markdown(correct_translation)}*_\\.",
+                f"📍 Квіз\n"
+                f"⏳ Спроби закінчились!\n"
+                f"Правильний переклад: {correct_translation}.",
                 parse_mode="MarkdownV2",
                 reply_markup=get_quiz_menu_keyboard()
             )
@@ -582,12 +578,12 @@ async def finish_quiz(chat_id):
     rank_title = get_rank_title(total_score)
     await bot.send_message(
         chat_id,
-        f"📍 *Результат квіза*\n"
-        f"🏁 *Квіз завершено\\!*\n"
-        f"Твій результат: *{escape_markdown(str(score))}/{escape_markdown(str(total))}*\n"
-        f"Вивчено слів: *{escape_markdown(str(total_words))}*\n"
-        f"Правильних відповідей: *{escape_markdown(str(correct_answers))}*\n"
-        f"Балів: *{escape_markdown(str(total_score))}* \\({escape_markdown(rank_title)}\\)",
+        f"📍 Результат квіза\n"
+        f"🏁 Квіз завершено!\n"
+        f"Твій результат: {score}/{total}\n"
+        f"Вивчено слів: {total_words}\n"
+        f"Правильних відповідей: {correct_answers}\n"
+        f"Балів: {total_score} ({rank_title})",
         reply_markup=get_finish_inline_keyboard(),
         parse_mode="MarkdownV2"
     )
