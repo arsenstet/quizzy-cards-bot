@@ -180,7 +180,7 @@ async def handle_callback_query(callback: types.CallbackQuery):
             await callback.answer("📊 Статистика оновлена!")
         except TelegramBadRequest as e:
             logging.error(f"Failed to edit message: {e}")
-            await callback.answer("📊 Статистика оновлена!")
+            await callback.message.answer("❌ Помилка при оновленні статистики. Спробуй ще раз.")
 
     elif data == "view_leaderboard":
         top_players, total_users = get_leaderboard()
@@ -188,28 +188,28 @@ async def handle_callback_query(callback: types.CallbackQuery):
         user = (await bot.get_chat_member(chat_id, chat_id)).user.username or (await bot.get_chat_member(chat_id, chat_id)).user.first_name
         user = escape_markdown(user)  # Екрануємо username
         score = get_user_stats(chat_id)[2]
-        leaderboard_text = f"📊 *Лідерборд* \\(Всього гравців: {escape_markdown(str(total_users))}\\)\\n"
-        leaderboard_text += f"Твоє місце: *\\#{escape_markdown(str(rank))}* \\({escape_markdown(user)}, {escape_markdown(str(score))} балів\\)\\n\\n"
+        leaderboard_text = f"📊 *Лідерборд* \\(Всього гравців: {escape_markdown(str(total_users))}\\)\n"
+        leaderboard_text += f"Твоє місце: *\\#{escape_markdown(str(rank))}* \\({user}, {escape_markdown(str(score))} балів\\)\n\n"
         leaderboard_text += "🏆 *Топ-5 гравців:*\n"
         for i, (user_id, user, score) in enumerate(top_players, 1):
             user = escape_markdown(user)  # Екрануємо ім'я користувача з топу
-            leaderboard_text += f"{escape_markdown(str(i))}. *{user}* \\- *{escape_markdown(str(score))}* балів\\n"
+            # Замінюємо '-' на '—' (довге тире), яке не потребує екранування
+            leaderboard_text += f"{escape_markdown(str(i))}. *{user}* — *{escape_markdown(str(score))}* балів\n"
         if not top_players:
             leaderboard_text += "Ще немає гравців у топі.\n"
         logging.info(f"Leaderboard text: {leaderboard_text}")  # Логування повного тексту
         try:
-            if current_text != leaderboard_text:
-                await callback.message.edit_text(
-                    leaderboard_text,
-                    reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                        [InlineKeyboardButton(text="🏠 Головне меню", callback_data="main_menu")]
-                    ]),
-                    parse_mode="MarkdownV2"
-                )
+            await callback.message.edit_text(
+                leaderboard_text,
+                reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                    [InlineKeyboardButton(text="🏠 Головне меню", callback_data="main_menu")]
+                ]),
+                parse_mode="MarkdownV2"
+            )
             await callback.answer("🏆 Лідерборд оновлено!")
         except TelegramBadRequest as e:
             logging.error(f"Failed to edit message: {e}")
-            await callback.answer("🏆 Лідерборд оновлено!")
+            await callback.message.answer(f"❌ Помилка при оновленні лідерборду: {str(e)}")
 
     elif data == "change_language":
         user_state[chat_id]["stage"] = "choose_language"
