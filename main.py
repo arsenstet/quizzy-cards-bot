@@ -189,8 +189,10 @@ async def handle_callback_query(callback: types.CallbackQuery):
         leaderboard_text = f"📊 *Лідерборд* \\(Всього гравців: {total_users}\\)\n"
         leaderboard_text += f"Твоє місце: *#{rank}* \\({username}, {get_user_stats(chat_id)[2]} балів\\)\n\n"
         leaderboard_text += "🏆 *Топ-5 гравців:*\n"
-        for i, (chat_id, user, score) in enumerate(top_players, 1):
+        for i, (user_id, user, score) in enumerate(top_players, 1):
             leaderboard_text += f"{i}. *{user}* — *{score}* балів\n"
+        if not top_players:
+            leaderboard_text += "Ще немає гравців у топі.\n"
         try:
             if current_text != leaderboard_text:
                 await callback.message.edit_text(

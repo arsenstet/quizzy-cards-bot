@@ -65,6 +65,11 @@ def init_db():
             )
         ''')
 
+        # Перевірка, чи таблиці створені
+        c.execute("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'")
+        tables = [row[0] for row in c.fetchall()]
+        logging.info(f"Tables in database: {tables}")
+
         conn.commit()
         conn.close()
         logging.info("Database initialized successfully")
@@ -85,7 +90,8 @@ def add_user(user_id, username):
         )
         c = conn.cursor()
         c.execute('INSERT INTO users (user_id, username) VALUES (%s, %s) ON CONFLICT (user_id) DO NOTHING', (user_id, username))
-        c.execute('INSERT INTO scores (user_id, score, username) VALUES (%s, 0, %s) ON CONFLICT (user_id) DO UPDATE SET username = EXCLUDED.username', (user_id, username))
+        # Перевіряємо, чи існує запис у scores, і додаємо, якщо його немає
+        c.execute('INSERT INTO scores (user_id, score, username) VALUES (%s, 0, %s) ON CONFLICT (user_id) DO NOTHING', (user_id, username))
         conn.commit()
         conn.close()
         logging.info(f"User {user_id} added successfully")
@@ -108,6 +114,10 @@ def save_quiz_result(user_id, word, is_correct):
         c.execute('INSERT INTO quiz_results (user_id, word, is_correct) VALUES (%s, %s, %s)', (user_id, word, is_correct))
         if is_correct:
             c.execute('UPDATE scores SET score = score + 1 WHERE user_id = %s', (user_id,))
+            # Логування для перевірки оновлення
+            c.execute('SELECT score FROM scores WHERE user_id = %s', (user_id,))
+            new_score = c.fetchone()[0]
+            logging.info(f"Updated score for user {user_id} to {new_score}")
         conn.commit()
         conn.close()
         logging.info(f"Quiz result for user {user_id} saved successfully")
