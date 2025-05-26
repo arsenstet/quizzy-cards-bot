@@ -187,7 +187,7 @@ async def handle_callback_query(callback: types.CallbackQuery):
         rank = get_user_rank(chat_id)
         username = (await bot.get_chat_member(chat_id, chat_id)).user.username or (await bot.get_chat_member(chat_id, chat_id)).user.first_name
         leaderboard_text = f"📊 *Лідерборд* \\(Всього гравців: {total_users}\\)\n"
-        leaderboard_text += f"Твоє місце: *#{rank}* \\({username}, {get_user_stats(chat_id)[2]} балів\\)\n\n"
+        leaderboard_text += f"Твоє місце: *\\#{rank}* \\({username}, {get_user_stats(chat_id)[2]} балів\\)\n\n"
         leaderboard_text += "🏆 *Топ-5 гравців:*\n"
         for i, (user_id, user, score) in enumerate(top_players, 1):
             leaderboard_text += f"{i}. *{user}* — *{score}* балів\n"
