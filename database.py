@@ -29,7 +29,7 @@ def init_db():
             password=DB_PASSWORD,
             host=DB_HOST,
             port=DB_PORT,
-            sslmode="require"  # Додаємо підтримку SSL
+            sslmode="require"
         )
         c = conn.cursor()
 
@@ -55,6 +55,16 @@ def init_db():
             )
         ''')
 
+        # Створення таблиці scores для балів
+        logging.info("Creating table 'scores' if it does not exist...")
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS scores (
+                user_id BIGINT PRIMARY KEY REFERENCES users(user_id),
+                score INTEGER DEFAULT 0,
+                username TEXT NOT NULL
+            )
+        ''')
+
         conn.commit()
         conn.close()
         logging.info("Database initialized successfully")
@@ -75,6 +85,7 @@ def add_user(user_id, username):
         )
         c = conn.cursor()
         c.execute('INSERT INTO users (user_id, username) VALUES (%s, %s) ON CONFLICT (user_id) DO NOTHING', (user_id, username))
+        c.execute('INSERT INTO scores (user_id, score, username) VALUES (%s, 0, %s) ON CONFLICT (user_id) DO UPDATE SET username = EXCLUDED.username', (user_id, username))
         conn.commit()
         conn.close()
         logging.info(f"User {user_id} added successfully")
@@ -95,6 +106,8 @@ def save_quiz_result(user_id, word, is_correct):
         )
         c = conn.cursor()
         c.execute('INSERT INTO quiz_results (user_id, word, is_correct) VALUES (%s, %s, %s)', (user_id, word, is_correct))
+        if is_correct:
+            c.execute('UPDATE scores SET score = score + 1 WHERE user_id = %s', (user_id,))
         conn.commit()
         conn.close()
         logging.info(f"Quiz result for user {user_id} saved successfully")
@@ -118,10 +131,55 @@ def get_user_stats(user_id):
         total_words = c.fetchone()[0]
         c.execute('SELECT COUNT(*) FROM quiz_results WHERE user_id = %s AND is_correct = TRUE', (user_id,))
         correct_answers = c.fetchone()[0]
+        c.execute('SELECT score FROM scores WHERE user_id = %s', (user_id,))
+        score = c.fetchone()
+        score = score[0] if score else 0
         conn.close()
-        return total_words, correct_answers
+        return total_words, correct_answers, score
     except Exception as e:
         logging.error(f"Error getting stats for user {user_id}: {e}")
+        raise
+
+# Отримання лідерборду
+def get_leaderboard():
+    try:
+        conn = psycopg2.connect(
+            dbname=DB_NAME,
+            user=DB_USER,
+            password=DB_PASSWORD,
+            host=DB_HOST,
+            port=DB_PORT,
+            sslmode="require"
+        )
+        c = conn.cursor()
+        c.execute('SELECT user_id, username, score FROM scores ORDER BY score DESC LIMIT 5')
+        top_players = c.fetchall()
+        c.execute('SELECT COUNT(*) FROM scores')
+        total_users = c.fetchone()[0]
+        conn.close()
+        return top_players, total_users
+    except Exception as e:
+        logging.error(f"Error getting leaderboard: {e}")
+        raise
+
+# Отримання місця користувача в лідерборді
+def get_user_rank(user_id):
+    try:
+        conn = psycopg2.connect(
+            dbname=DB_NAME,
+            user=DB_USER,
+            password=DB_PASSWORD,
+            host=DB_HOST,
+            port=DB_PORT,
+            sslmode="require"
+        )
+        c = conn.cursor()
+        c.execute('SELECT COUNT(*) + 1 FROM scores WHERE score > (SELECT score FROM scores WHERE user_id = %s)', (user_id,))
+        rank = c.fetchone()[0]
+        conn.close()
+        return rank
+    except Exception as e:
+        logging.error(f"Error getting rank for user {user_id}: {e}")
         raise
 
 # Перегляд усіх даних (для адміністратора)

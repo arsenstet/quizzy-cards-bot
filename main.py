@@ -7,9 +7,9 @@ from aiogram.filters import Command, CommandStart
 from aiogram.exceptions import TelegramBadRequest
 from flask import Flask, request
 from text_analyzer import extract_important_words, extract_text_from_url
-from keyboards import get_language_inline_keyboard, get_main_menu_inline_keyboard, get_finish_inline_keyboard, get_back_and_main_menu_keyboard, get_quiz_menu_keyboard
+from keyboards import get_language_inline_keyboard, get_main_menu_inline_keyboard, get_finish_inline_keyboard, get_back_and_main_menu_keyboard, get_quiz_menu_keyboard, get_stats_menu_keyboard
 from utils import translate_word
-from database import init_db, add_user, save_quiz_result, get_user_stats, view_all_data
+from database import init_db, add_user, save_quiz_result, get_user_stats, get_leaderboard, get_user_rank
 from dotenv import load_dotenv
 from langdetect import detect
 import wikipedia
@@ -45,6 +45,17 @@ def escape_markdown(text):
     escape_chars = r'_*[]()~`>#+-=|{}.!'
     return ''.join('\\' + char if char in escape_chars else char for char in text)
 
+def get_rank_title(score):
+    """Повертає звання на основі кількості балів."""
+    if score < 10:
+        return "Початківець"
+    elif score < 50:
+        return "Аматор"
+    elif score < 100:
+        return "Майстер"
+    else:
+        return "Легенда"
+
 @dp.message(CommandStart())
 async def handle_start(message: types.Message):
     chat_id = message.chat.id
@@ -69,15 +80,15 @@ async def handle_start(message: types.Message):
 @dp.message(Command("stats"))
 async def handle_stats(message: types.Message):
     chat_id = message.chat.id
-    total_words, correct_answers = get_user_stats(chat_id)
+    total_words, correct_answers, score = get_user_stats(chat_id)
+    rank_title = get_rank_title(score)
     await message.answer(
         f"📍 *Статистика*\n"
         f"*Твій прогрес:*\n"
         f"• Вивчено слів: *{total_words}*\n"
-        f"• Правильних відповідей: *{correct_answers}*",
-        reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="🏠 Головне меню", callback_data="main_menu")]
-        ]),
+        f"• Правильних відповідей: *{correct_answers}*\n"
+        f"• Балів: *{score}* \\({rank_title}\\)",
+        reply_markup=get_stats_menu_keyboard(),
         parse_mode="MarkdownV2"
     )
 
@@ -150,26 +161,49 @@ async def handle_callback_query(callback: types.CallbackQuery):
             await callback.answer()
 
     elif data == "view_stats":
-        total_words, correct_answers = get_user_stats(chat_id)
+        total_words, correct_answers, score = get_user_stats(chat_id)
+        rank_title = get_rank_title(score)
         new_text = (
             "📍 *Статистика*\n"
             f"*Твій прогрес:*\n"
             f"• Вивчено слів: *{total_words}*\n"
-            f"• Правильних відповідей: *{correct_answers}*"
+            f"• Правильних відповідей: *{correct_answers}*\n"
+            f"• Балів: *{score}* \\({rank_title}\\)"
         )
         try:
             if current_text != new_text:
                 await callback.message.edit_text(
                     new_text,
-                    reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                        [InlineKeyboardButton(text="🏠 Головне меню", callback_data="main_menu")]
-                    ]),
+                    reply_markup=get_stats_menu_keyboard(),
                     parse_mode="MarkdownV2"
                 )
             await callback.answer("📊 Статистика оновлена!")
         except TelegramBadRequest as e:
             logging.error(f"Failed to edit message: {e}")
             await callback.answer("📊 Статистика оновлена!")
+
+    elif data == "view_leaderboard":
+        top_players, total_users = get_leaderboard()
+        rank = get_user_rank(chat_id)
+        username = (await bot.get_chat_member(chat_id, chat_id)).user.username or (await bot.get_chat_member(chat_id, chat_id)).user.first_name
+        leaderboard_text = f"📊 *Лідерборд* \\(Всього гравців: {total_users}\\)\n"
+        leaderboard_text += f"Твоє місце: *#{rank}* \\({username}, {get_user_stats(chat_id)[2]} балів\\)\n\n"
+        leaderboard_text += "🏆 *Топ-5 гравців:*\n"
+        for i, (chat_id, user, score) in enumerate(top_players, 1):
+            leaderboard_text += f"{i}. *{user}* — *{score}* балів\n"
+        try:
+            if current_text != leaderboard_text:
+                await callback.message.edit_text(
+                    leaderboard_text,
+                    reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                        [InlineKeyboardButton(text="🏠 Головне меню", callback_data="main_menu")]
+                    ]),
+                    parse_mode="MarkdownV2"
+                )
+            await callback.answer("🏆 Лідерборд оновлено!")
+        except TelegramBadRequest as e:
+            logging.error(f"Failed to edit message: {e}")
+            await callback.answer("🏆 Лідерборд оновлено!")
 
     elif data == "change_language":
         user_state[chat_id]["stage"] = "choose_language"
@@ -218,7 +252,7 @@ async def handle_callback_query(callback: types.CallbackQuery):
             "📚 Я створюю квізи з текстів або посилань, допомагаючи тобі запам’ятовувати ключові слова та їх переклади\\.\n\n"
             "*Основний функціонал:*\n"
             "• 📝 *Почати квіз* — введи текст, посилання або обери випадковий текст для квіза\\.\n"
-            "• 📊 *Статистика* — переглядай свій прогрес\\.\n"
+            "• 📊 *Статистика* — переглядай свій прогрес та лідерборд\\.\n"
             "• 🌐 *Змінити мову* — обери мову тексту для квіза\\.\n\n"
             "*Команди:*\n"
             "• /start — почати роботу з ботом\n"
@@ -479,7 +513,7 @@ async def send_next_word(chat_id):
             f"Переклади слово _*{escape_markdown(word)}*_ українською:\n"
             f"Спроби: *{state['attempts']}*",
             parse_mode="MarkdownV2",
-            reply_markup=get_quiz_menu_keyboard()  # Змінено на нову клавіатуру
+            reply_markup=get_quiz_menu_keyboard()
         )
     else:
         await finish_quiz(chat_id)
@@ -500,10 +534,10 @@ async def check_answer(chat_id, user_answer):
         await bot.send_message(
             chat_id,
             f"📍 *Квіз*\n"
-            f"✅ *Правильно\\!* 🎉\n"
+            f"✅ *Правильно\\!* 🎉 \\(+1 бал\\)\n"
             f"Переходимо до наступного слова\\!",
             parse_mode="MarkdownV2",
-            reply_markup=get_quiz_menu_keyboard()  # Змінено на нову клавіатуру
+            reply_markup=get_quiz_menu_keyboard()
         )
         await send_next_word(chat_id)
     else:
@@ -517,7 +551,7 @@ async def check_answer(chat_id, user_answer):
                 f"❌ *Неправильно\\.*\n"
                 f"Спроби: *{state['attempts']}*",
                 parse_mode="MarkdownV2",
-                reply_markup=get_quiz_menu_keyboard()  # Змінено на нову клавіатуру
+                reply_markup=get_quiz_menu_keyboard()
             )
         else:
             state["current_word_index"] += 1
@@ -529,7 +563,7 @@ async def check_answer(chat_id, user_answer):
                 f"⏳ *Спроби закінчились\\!*\n"
                 f"Правильний переклад: _*{correct_translation}*_\\.",
                 parse_mode="MarkdownV2",
-                reply_markup=get_quiz_menu_keyboard()  # Змінено на нову клавіатуру
+                reply_markup=get_quiz_menu_keyboard()
             )
             await send_next_word(chat_id)
 
@@ -538,14 +572,16 @@ async def finish_quiz(chat_id):
     state = user_state[chat_id]
     score = state["score"]
     total = state["total_words"]
-    total_words, correct_answers = get_user_stats(chat_id)
+    total_words, correct_answers, total_score = get_user_stats(chat_id)
+    rank_title = get_rank_title(total_score)
     await bot.send_message(
         chat_id,
         f"📍 *Результат квіза*\n"
         f"🏁 *Квіз завершено\\!*\n"
         f"Твій результат: *{score}/{total}*\n"
         f"Вивчено слів: *{total_words}*\n"
-        f"Правильних відповідей: *{correct_answers}*",
+        f"Правильних відповідей: *{correct_answers}*\n"
+        f"Балів: *{total_score}* \\({rank_title}\\)",
         reply_markup=get_finish_inline_keyboard(),
         parse_mode="MarkdownV2"
     )
