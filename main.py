@@ -25,6 +25,7 @@ app = Flask(__name__)
 logging.basicConfig(level=logging.INFO)
 
 user_state = {}
+ADMIN_ID = ()
 
 IS_LOCAL = os.getenv("IS_LOCAL", "true").lower() == "true"
 
