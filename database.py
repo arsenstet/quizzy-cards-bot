@@ -131,10 +131,8 @@ def view_all_data():
         c = conn.cursor()
         c.execute('SELECT * FROM users')
         users = c.fetchall()
-        c.execute('SELECT * FROM quiz_results')
-        results = c.fetchall()
         conn.close()
-        return users, results
+        return users
     except Exception as e:
         logging.error(f"Error viewing all data: {e}")
         raise

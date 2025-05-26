@@ -72,11 +72,10 @@ async def handle_viewdata(message: types.Message):
     if chat_id != ADMIN_ID:
         await message.answer("❌ Доступ заборонено!")
         return
-    users, results = view_all_data()
+    users = view_all_data()
     user_text = "\n".join([f"ID: {u[0]}, Username: {u[1]}, Created: {u[2]}" for u in users])
-    result_text = "\n".join([f"User ID: {r[0]}, Word: {r[1]}, Correct: {r[2]}, Time: {r[3]}" for r in results])
     await message.answer(
-        f"Користувачі:\n{user_text or 'Пусто'}\n\nРезультати квіза:\n{result_text or 'Пусто'}",
+        f"Користувачі:\n{user_text or 'Пусто'}",
         reply_markup=InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(text="🏠 Головне меню", callback_data="main_menu")]
         ])
@@ -200,7 +199,7 @@ async def handle_callback_query(callback: types.CallbackQuery):
             "Команди:\n"
             "• /start — почати роботу з ботом\n"
             "• /stats — переглянути статистику\n"
-            "• /viewdata — переглянути всі дані (тільки для адміністратора)\n\n"
+            "• /viewdata — переглянути всіх користувачів (тільки для адміністратора)\n\n"
             "✨ Надсилай текст або обирай опції у меню, щоб розпочати!"
         )
         try:
