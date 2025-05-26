@@ -14,10 +14,8 @@ from dotenv import load_dotenv
 from langdetect import detect
 import wikipedia
 
-# Завантаження змінних середовища
 load_dotenv()
 
-# Налаштування
 TOKEN = os.getenv("BOT_TOKEN")
 if not TOKEN:
     raise ValueError("BOT_TOKEN is not set in environment variables")
@@ -26,19 +24,15 @@ dp = Dispatcher()
 app = Flask(__name__)
 logging.basicConfig(level=logging.INFO)
 
-# Зберігання стану користувача
 user_state = {}
-ADMIN_ID = 123456  # Заміни на свій Telegram ID
+ADMIN_ID = {}
 
-# Визначення, чи запуск локальний
 IS_LOCAL = os.getenv("IS_LOCAL", "true").lower() == "true"
 
-# Створюємо окремий цикл подій для обробки асинхронних викликів у Flask
-loop = asyncio.new_event_loop()
+loop = asyncio.new_event_loop() #цикл подій для обробки асинхронних викликів у Flask
 asyncio.set_event_loop(loop)
 
-# Налаштування Wikipedia
-wikipedia.set_lang("en")  # Встановлюємо мову для Вікіпедії (англійська)
+wikipedia.set_lang("en")
 
 def escape_markdown(text):
     """Екранує спеціальні символи для MarkdownV2 у Telegram."""
@@ -65,7 +59,6 @@ async def handle_start(message: types.Message):
     )
     user_state[chat_id] = {"stage": "choose_language"}
 
-
 @dp.message(Command("stats"))
 async def handle_stats(message: types.Message):
     chat_id = message.chat.id
@@ -80,7 +73,6 @@ async def handle_stats(message: types.Message):
         ]),
         parse_mode="MarkdownV2"
     )
-
 
 @dp.message(Command("viewdata"))
 async def handle_viewdata(message: types.Message):
@@ -99,7 +91,6 @@ async def handle_viewdata(message: types.Message):
         parse_mode="MarkdownV2"
     )
 
-
 @dp.callback_query()
 async def handle_callback_query(callback: types.CallbackQuery):
     chat_id = callback.message.chat.id
@@ -113,10 +104,10 @@ async def handle_callback_query(callback: types.CallbackQuery):
         new_text = (
             "📍 *Головне меню*\n"
             "✅ *Мову вибрано\\!*\n"
-            "• 📝 *Почати квіз* — створюй картки зі слів\n"
-            "• 📊 *Статистика* — твій прогрес\n"
-            "• 🌐 *Змінити мову* — вибери іншу мову\n"
-            "• ℹ️ *Довідка* — інформація про бота"
+            "📝 *Почати квіз* — створюй картки зі слів\n"
+            "📊 *Статистика* — твій прогрес\n"
+            "🌐 *Змінити мову* — вибери іншу мову\n"
+            "ℹ️ *Довідка* — інформація про бота"
         )
         try:
             if current_text != new_text:
@@ -135,7 +126,7 @@ async def handle_callback_query(callback: types.CallbackQuery):
         new_text = (
             "📍 *Введення тексту*\n"
             "📝 *Надішли текст або посилання для аналізу:*\n"
-            "• Або обери *Випадковий текст* для квіза з випадкової статті"
+            "Або обери *Випадковий текст* для квіза з випадкової статті"
         )
         try:
             if current_text != new_text:
@@ -154,8 +145,8 @@ async def handle_callback_query(callback: types.CallbackQuery):
         new_text = (
             "📍 *Статистика*\n"
             f"*Твій прогрес:*\n"
-            f"• Вивчено слів: *{total_words}*\n"
-            f"• Правильних відповідей: *{correct_answers}*"
+            f"Вивчено слів: *{total_words}*\n"
+            f"Правильних відповідей: *{correct_answers}*"
         )
         try:
             if current_text != new_text:
@@ -194,10 +185,10 @@ async def handle_callback_query(callback: types.CallbackQuery):
         new_text = (
             "📍 *Головне меню*\n"
             "🏠 *Вибери дію:*\n"
-            "• 📝 *Почати квіз* — створюй картки зі слів\n"
-            "• 📊 *Статистика* — твій прогрес\n"
-            "• 🌐 *Змінити мову* — вибери іншу мову\n"
-            "• ℹ️ *Довідка* — інформація про бота"
+            "📝 *Почати квіз* — створюй картки зі слів\n"
+            "📊 *Статистика* — твій прогрес\n"
+            "🌐 *Змінити мову* — вибери іншу мову\n"
+            "ℹ️ *Довідка* — інформація про бота"
         )
         try:
             if current_text != new_text:
@@ -242,12 +233,11 @@ async def handle_callback_query(callback: types.CallbackQuery):
 
     elif data == "random_text":
         try:
-            # Отримуємо випадкову статтю з Вікіпедії
-            random_page = wikipedia.random(1)  # Отримуємо 1 випадкову статтю
+            random_page = wikipedia.random(1)  #Отримуємо 1 випадкову статтю з вікіпедії
             page = wikipedia.page(random_page)
             article_text = page.content
             page_title = page.title
-            if not article_text or len(article_text) < 100:  # Перевірка, чи текст придатний
+            if not article_text or len(article_text) < 50:
                 await callback.message.answer(
                     "📍 *Помилка*\n"
                     "❌ *Не вдалося отримати придатний випадковий текст\\. Спробуй ще раз\\.*",
@@ -256,8 +246,7 @@ async def handle_callback_query(callback: types.CallbackQuery):
                 )
                 return
 
-            # Перевірка мови (повинна бути англійська)
-            detected_language = detect(article_text)
+            detected_language = detect(article_text) # Перевірка мови
             if detected_language != "en":
                 await callback.message.answer(
                     "📍 *Попередження*\n"
@@ -267,13 +256,11 @@ async def handle_callback_query(callback: types.CallbackQuery):
                 )
                 return
 
-            # Витягуємо ключові слова
-            words = extract_important_words(article_text)
+            words = extract_important_words(article_text) # Витягуємо ключові слова
             if words:
                 if isinstance(words, dict):
                     words = words[0]
-                # Екрануємо спеціальні символи в назві статті та словах
-                escaped_title = escape_markdown(page_title)
+                escaped_title = escape_markdown(page_title) # Екрануємо спеціальні символи в назві статті та словах
                 escaped_words = ', '.join(escape_markdown(word) for word in words)
                 await callback.message.answer(
                     f"📍 *Підготовка квіза*\n"
@@ -361,7 +348,7 @@ async def handle_callback_query(callback: types.CallbackQuery):
         new_text = (
             "📍 *Введення тексту*\n"
             "📝 *Надішли новий текст або посилання для аналізу:*\n"
-            "• Або обери *Випадковий текст* для квіза з випадкової статті"
+            "Або обери *Випадковий текст* для квіза з випадкової статті"
         )
         try:
             if current_text != new_text:
@@ -375,15 +362,13 @@ async def handle_callback_query(callback: types.CallbackQuery):
             logging.error(f"Failed to edit message: {e}")
             await callback.answer()
 
-
 @dp.message()
 async def handle_message(message: types.Message):
     chat_id = message.chat.id
     text = message.text
 
     if user_state.get(chat_id, {}).get("stage") == "waiting_for_text":
-        # Визначаємо, чи це посилання, і витягуємо текст
-        if text.startswith("http://") or text.startswith("https://"):
+        if text.startswith("http://") or text.startswith("https://"): # Визначаємо, чи це посилання, і витягуємо текст
             article_text = extract_text_from_url(text)
             if not article_text:
                 await message.answer(
@@ -397,8 +382,7 @@ async def handle_message(message: types.Message):
         else:
             text_to_analyze = text
 
-        # Перевірка мови тексту
-        chosen_language = user_state.get(chat_id, {}).get("language", "en")
+        chosen_language = user_state.get(chat_id, {}).get("language", "en") # Перевірка мови тексту
         try:
             detected_language = detect(text_to_analyze)
             logging.info(f"Detected language: {detected_language}, Chosen language: {chosen_language}")
@@ -422,13 +406,11 @@ async def handle_message(message: types.Message):
             )
             return
 
-        # Якщо мова збігається, продовжуємо обробку
         words = extract_important_words(text_to_analyze)
 
         if words:
             if isinstance(words, dict):
                 words = words[0]
-            # Екрануємо спеціальні символи в словах
             escaped_words = ', '.join(escape_markdown(word) for word in words)
             await message.answer(
                 f"📍 *Підготовка квіза*\n"
@@ -464,7 +446,6 @@ async def handle_message(message: types.Message):
     elif user_state.get(chat_id, {}).get("stage") == "quiz":
         await check_answer(chat_id, text)
 
-
 async def send_next_word(chat_id):
     state = user_state[chat_id]
     if state["current_word_index"] < len(state["words"]):
@@ -479,11 +460,10 @@ async def send_next_word(chat_id):
             f"Переклади слово _*{escape_markdown(word)}*_ українською:\n"
             f"Спроби: *{state['attempts']}*",
             parse_mode="MarkdownV2",
-            reply_markup=get_quiz_menu_keyboard()  # Змінено на нову клавіатуру
+            reply_markup=get_quiz_menu_keyboard()
         )
     else:
         await finish_quiz(chat_id)
-
 
 async def check_answer(chat_id, user_answer):
     state = user_state[chat_id]
@@ -503,7 +483,7 @@ async def check_answer(chat_id, user_answer):
             f"✅ *Правильно\\!* 🎉\n"
             f"Переходимо до наступного слова\\!",
             parse_mode="MarkdownV2",
-            reply_markup=get_quiz_menu_keyboard()  # Змінено на нову клавіатуру
+            reply_markup=get_quiz_menu_keyboard()
         )
         await send_next_word(chat_id)
     else:
@@ -517,7 +497,7 @@ async def check_answer(chat_id, user_answer):
                 f"❌ *Неправильно\\.*\n"
                 f"Спроби: *{state['attempts']}*",
                 parse_mode="MarkdownV2",
-                reply_markup=get_quiz_menu_keyboard()  # Змінено на нову клавіатуру
+                reply_markup=get_quiz_menu_keyboard()
             )
         else:
             state["current_word_index"] += 1
@@ -529,7 +509,7 @@ async def check_answer(chat_id, user_answer):
                 f"⏳ *Спроби закінчились\\!*\n"
                 f"Правильний переклад: _*{correct_translation}*_\\.",
                 parse_mode="MarkdownV2",
-                reply_markup=get_quiz_menu_keyboard()  # Змінено на нову клавіатуру
+                reply_markup=get_quiz_menu_keyboard()
             )
             await send_next_word(chat_id)
 
