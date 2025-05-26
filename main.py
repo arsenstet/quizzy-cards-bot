@@ -85,9 +85,9 @@ async def handle_stats(message: types.Message):
     await message.answer(
         f"📍 *Статистика*\n"
         f"*Твій прогрес:*\n"
-        f"• Вивчено слів: *{total_words}*\n"
-        f"• Правильних відповідей: *{correct_answers}*\n"
-        f"• Балів: *{score}* \\({rank_title}\\)",
+        f"• Вивчено слів: *{escape_markdown(str(total_words))}*\n"
+        f"• Правильних відповідей: *{escape_markdown(str(correct_answers))}*\n"
+        f"• Балів: *{escape_markdown(str(score))}* \\({escape_markdown(rank_title)}\\)",
         reply_markup=get_stats_menu_keyboard(),
         parse_mode="MarkdownV2"
     )
@@ -100,8 +100,8 @@ async def handle_viewdata(message: types.Message):
         await message.answer("❌ *Доступ заборонено\\!*", parse_mode="MarkdownV2")
         return
     users, results = view_all_data()
-    user_text = "\\n".join([f"ID: *{u[0]}*, Username: *{u[1]}*, Created: *{u[2]}*" for u in users])
-    result_text = "\\n".join([f"User ID: *{r[0]}*, Word: *{r[1]}*, Correct: *{r[2]}*, Time: *{r[3]}*" for r in results])
+    user_text = "\\n".join([f"ID: *{escape_markdown(str(u[0]))}*, Username: *{escape_markdown(u[1])}*, Created: *{escape_markdown(str(u[2]))}*" for u in users])
+    result_text = "\\n".join([f"User ID: *{escape_markdown(str(r[0]))}*, Word: *{escape_markdown(r[1])}*, Correct: *{escape_markdown(str(r[2]))}*, Time: *{escape_markdown(str(r[3]))}*" for r in results])
     await message.answer(
         f"*Користувачі:*\n{user_text or 'Пусто'}\n\n*Результати квіза:*\n{result_text or 'Пусто'}",
         reply_markup=InlineKeyboardMarkup(inline_keyboard=[
@@ -166,9 +166,9 @@ async def handle_callback_query(callback: types.CallbackQuery):
         new_text = (
             "📍 *Статистика*\n"
             f"*Твій прогрес:*\n"
-            f"• Вивчено слів: *{total_words}*\n"
-            f"• Правильних відповідей: *{correct_answers}*\n"
-            f"• Балів: *{score}* \\({rank_title}\\)"
+            f"• Вивчено слів: *{escape_markdown(str(total_words))}*\n"
+            f"• Правильних відповідей: *{escape_markdown(str(correct_answers))}*\n"
+            f"• Балів: *{escape_markdown(str(score))}* \\({escape_markdown(rank_title)}\\)"
         )
         try:
             if current_text != new_text:
@@ -185,17 +185,18 @@ async def handle_callback_query(callback: types.CallbackQuery):
     elif data == "view_leaderboard":
         top_players, total_users = get_leaderboard()
         rank = get_user_rank(chat_id)
-        username = (await bot.get_chat_member(chat_id, chat_id)).user.username or (await bot.get_chat_member(chat_id, chat_id)).user.first_name
-        username = escape_markdown(username)  # Екрануємо username
-        leaderboard_text = f"📊 *Лідерборд* \\(Всього гравців: {total_users}\\)\n"
-        leaderboard_text += f"Твоє місце: *\\#{rank}* \\({username}, {get_user_stats(chat_id)[2]} балів\\)\n\n"
+        user = (await bot.get_chat_member(chat_id, chat_id)).user.username or (await bot.get_chat_member(chat_id, chat_id)).user.first_name
+        user = escape_markdown(user)  # Екрануємо username
+        score = get_user_stats(chat_id)[2]
+        leaderboard_text = f"📊 *Лідерборд* \\(Всього гравців: {escape_markdown(str(total_users))}\\)\\n"
+        leaderboard_text += f"Твоє місце: *\\#{escape_markdown(str(rank))}* \\({escape_markdown(user)}, {escape_markdown(str(score))} балів\\)\\n\\n"
         leaderboard_text += "🏆 *Топ-5 гравців:*\n"
         for i, (user_id, user, score) in enumerate(top_players, 1):
             user = escape_markdown(user)  # Екрануємо ім'я користувача з топу
-            leaderboard_text += f"{i}. *{user}* \\- *{score}* балів\n"
+            leaderboard_text += f"{escape_markdown(str(i))}. *{user}* \\- *{escape_markdown(str(score))}* балів\\n"
         if not top_players:
             leaderboard_text += "Ще немає гравців у топі.\n"
-        logging.info(f"Leaderboard text: {leaderboard_text}")  # Логування тексту для діагностики
+        logging.info(f"Leaderboard text: {leaderboard_text}")  # Логування повного тексту
         try:
             if current_text != leaderboard_text:
                 await callback.message.edit_text(
@@ -510,13 +511,13 @@ async def send_next_word(chat_id):
         word = state["words"][state["current_word_index"]]
         translation = translate_word(word)
         state["current_translation"] = translation
-        progress = f"*Слово {state['current_word_index'] + 1}/{state['total_words']}*"
+        progress = f"*Слово {escape_markdown(str(state['current_word_index'] + 1))}/{escape_markdown(str(state['total_words']))}*"
         await bot.send_message(
             chat_id,
             f"📍 *Квіз*\n"
             f"{progress}\n"
             f"Переклади слово _*{escape_markdown(word)}*_ українською:\n"
-            f"Спроби: *{state['attempts']}*",
+            f"Спроби: *{escape_markdown(str(state['attempts']))}*",
             parse_mode="MarkdownV2",
             reply_markup=get_quiz_menu_keyboard()
         )
@@ -548,13 +549,13 @@ async def check_answer(chat_id, user_answer):
     else:
         state["attempts"] -= 1
         if state["attempts"] > 0:
-            progress = f"*Слово {state['current_word_index'] + 1}/{state['total_words']}*"
+            progress = f"*Слово {escape_markdown(str(state['current_word_index'] + 1))}/{escape_markdown(str(state['total_words']))}*"
             await bot.send_message(
                 chat_id,
                 f"📍 *Квіз*\n"
                 f"{progress}\n"
                 f"❌ *Неправильно\\.*\n"
-                f"Спроби: *{state['attempts']}*",
+                f"Спроби: *{escape_markdown(str(state['attempts']))}*",
                 parse_mode="MarkdownV2",
                 reply_markup=get_quiz_menu_keyboard()
             )
@@ -566,7 +567,7 @@ async def check_answer(chat_id, user_answer):
                 chat_id,
                 f"📍 *Квіз*\n"
                 f"⏳ *Спроби закінчились\\!*\n"
-                f"Правильний переклад: _*{correct_translation}*_\\.",
+                f"Правильний переклад: _*{escape_markdown(correct_translation)}*_\\.",
                 parse_mode="MarkdownV2",
                 reply_markup=get_quiz_menu_keyboard()
             )
@@ -583,10 +584,10 @@ async def finish_quiz(chat_id):
         chat_id,
         f"📍 *Результат квіза*\n"
         f"🏁 *Квіз завершено\\!*\n"
-        f"Твій результат: *{score}/{total}*\n"
-        f"Вивчено слів: *{total_words}*\n"
-        f"Правильних відповідей: *{correct_answers}*\n"
-        f"Балів: *{total_score}* \\({rank_title}\\)",
+        f"Твій результат: *{escape_markdown(str(score))}/{escape_markdown(str(total))}*\n"
+        f"Вивчено слів: *{escape_markdown(str(total_words))}*\n"
+        f"Правильних відповідей: *{escape_markdown(str(correct_answers))}*\n"
+        f"Балів: *{escape_markdown(str(total_score))}* \\({escape_markdown(rank_title)}\\)",
         reply_markup=get_finish_inline_keyboard(),
         parse_mode="MarkdownV2"
     )
