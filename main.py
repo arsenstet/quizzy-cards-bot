@@ -42,7 +42,7 @@ wikipedia.set_lang("en")  # Встановлюємо мову для Вікіп�
 
 def escape_markdown(text):
     """Екранує спеціальні символи для MarkdownV2 у Telegram."""
-    escape_chars = r'_*[]()~`>#+-=|{}.!'
+    escape_chars = r'_*[]()~`>#+-={|}.!'
     return ''.join('\\' + char if char in escape_chars else char for char in text)
 
 def get_rank_title(score):
@@ -186,13 +186,16 @@ async def handle_callback_query(callback: types.CallbackQuery):
         top_players, total_users = get_leaderboard()
         rank = get_user_rank(chat_id)
         username = (await bot.get_chat_member(chat_id, chat_id)).user.username or (await bot.get_chat_member(chat_id, chat_id)).user.first_name
+        username = escape_markdown(username)  # Екрануємо username
         leaderboard_text = f"📊 *Лідерборд* \\(Всього гравців: {total_users}\\)\n"
         leaderboard_text += f"Твоє місце: *\\#{rank}* \\({username}, {get_user_stats(chat_id)[2]} балів\\)\n\n"
         leaderboard_text += "🏆 *Топ-5 гравців:*\n"
         for i, (user_id, user, score) in enumerate(top_players, 1):
+            user = escape_markdown(user)  # Екрануємо ім'я користувача з топу
             leaderboard_text += f"{i}. *{user}* \\- *{score}* балів\n"
         if not top_players:
             leaderboard_text += "Ще немає гравців у топі.\n"
+        logging.info(f"Leaderboard text: {leaderboard_text}")  # Логування тексту для діагностики
         try:
             if current_text != leaderboard_text:
                 await callback.message.edit_text(
