@@ -194,7 +194,7 @@ async def handle_callback_query(callback: types.CallbackQuery):
         for i, (user_id, user, score) in enumerate(top_players, 1):
             user = escape_markdown(user)  # Екрануємо ім'я користувача з топу
             # Замінюємо '-' на '—' (довге тире), яке не потребує екранування
-            leaderboard_text += f"{escape_markdown(str(i))}. *{user}* \\— *{escape_markdown(str(score))}* балів\n"
+            leaderboard_text += f"{escape_markdown(str(i))}. *{user}* \\- *{escape_markdown(str(score))}* балів\n"
         if not top_players:
             leaderboard_text += "Ще немає гравців у топі.\n"
         logging.info(f"Leaderboard text: {leaderboard_text}")  # Логування повного тексту
